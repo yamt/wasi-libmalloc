@@ -24,5 +24,9 @@ sysroot/lib/wasm32-wasi-threads/libmalloc.a
 
 # CAVEAT
 
-the shared library doesn't work well
-because of https://github.com/llvm/llvm-project/issues/104575
+the shared library doesn't work well because:
+
+* https://github.com/llvm/llvm-project/issues/104575
+
+* a few things like duplocale use the libc-internal hidden aliases.
+  maybe we should stop using the __heap_base/__heap_end region.
