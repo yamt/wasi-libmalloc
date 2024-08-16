@@ -22,7 +22,11 @@ sysroot/lib/wasm32-wasi-threads/libmalloc.a
 %
 ```
 
-# CAVEAT
+## tests
+
+the `test-hook` branch has a few test code.
+
+## CAVEATS
 
 the shared library doesn't work well because:
 
