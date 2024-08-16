@@ -64,11 +64,20 @@ static size_t dlmalloc_usable_size(void*);
 
 // Export the public names.
 
+__attribute__((weak)) extern void test_malloc_hook(size_t size);
+__attribute__((weak)) extern void test_free_hook(void *p);
+
 void *malloc(size_t size) {
+    if (test_malloc_hook != NULL) {
+        test_malloc_hook(size);
+    }
     return dlmalloc(size);
 }
 
 void free(void *ptr) {
+    if (test_free_hook != NULL) {
+        test_free_hook(ptr);
+    }
     dlfree(ptr);
 }
 
