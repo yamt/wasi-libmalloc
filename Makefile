@@ -82,10 +82,10 @@ LIBC_BOTTOM_HALF_CLOUDLIBC_SRC_INC = $(LIBC_BOTTOM_HALF_CLOUDLIBC_SRC)/include
 LIBC_BOTTOM_HALF_HEADERS_PUBLIC = $(LIBC_BOTTOM_HALF_DIR)/headers/public
 LIBC_BOTTOM_HALF_HEADERS_PRIVATE = $(LIBC_BOTTOM_HALF_DIR)/headers/private
 LIBC_BOTTOM_HALF_SOURCES = $(LIBC_BOTTOM_HALF_DIR)/sources
-LIBC_BOTTOM_HALF_ALL_SOURCES = \
-    $(sort \
-    $(shell find $(LIBC_BOTTOM_HALF_CLOUDLIBC_SRC) -name \*.c) \
-    $(shell find $(LIBC_BOTTOM_HALF_SOURCES) -name \*.c))
+#LIBC_BOTTOM_HALF_ALL_SOURCES = \
+#    $(sort \
+#    $(shell find $(LIBC_BOTTOM_HALF_CLOUDLIBC_SRC) -name \*.c) \
+#    $(shell find $(LIBC_BOTTOM_HALF_SOURCES) -name \*.c))
 
 ifeq ($(WASI_SNAPSHOT), p1)
 # Omit source files not relevant to WASIp1.  As we introduce files
@@ -131,14 +131,14 @@ endif
 LIBC_BOTTOM_HALF_ALL_SOURCES := $(filter-out $(LIBC_BOTTOM_HALF_SOURCES)/chdir.c,$(LIBC_BOTTOM_HALF_ALL_SOURCES))
 LIBC_BOTTOM_HALF_ALL_SOURCES := $(LIBC_BOTTOM_HALF_ALL_SOURCES) $(LIBC_BOTTOM_HALF_SOURCES)/chdir.c
 
-LIBWASI_EMULATED_MMAN_SOURCES = \
-    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/mman -name \*.c))
-LIBWASI_EMULATED_PROCESS_CLOCKS_SOURCES = \
-    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/clocks -name \*.c))
-LIBWASI_EMULATED_GETPID_SOURCES = \
-    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/getpid -name \*.c))
-LIBWASI_EMULATED_SIGNAL_SOURCES = \
-    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/signal -name \*.c))
+#LIBWASI_EMULATED_MMAN_SOURCES = \
+#    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/mman -name \*.c))
+#LIBWASI_EMULATED_PROCESS_CLOCKS_SOURCES = \
+#    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/clocks -name \*.c))
+#LIBWASI_EMULATED_GETPID_SOURCES = \
+#    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/getpid -name \*.c))
+#LIBWASI_EMULATED_SIGNAL_SOURCES = \
+#    $(sort $(shell find $(LIBC_BOTTOM_HALF_DIR)/signal -name \*.c))
 LIBWASI_EMULATED_SIGNAL_MUSL_SOURCES = \
     $(LIBC_TOP_HALF_MUSL_SRC_DIR)/signal/psignal.c \
     $(LIBC_TOP_HALF_MUSL_SRC_DIR)/string/strsignal.c
@@ -379,9 +379,9 @@ BULK_MEMORY_SOURCES = \
     $(LIBC_TOP_HALF_MUSL_SRC_DIR)/string/memset.c
 LIBC_TOP_HALF_HEADERS_PRIVATE = $(LIBC_TOP_HALF_DIR)/headers/private
 LIBC_TOP_HALF_SOURCES = $(LIBC_TOP_HALF_DIR)/sources
-LIBC_TOP_HALF_ALL_SOURCES = \
-    $(LIBC_TOP_HALF_MUSL_SOURCES) \
-    $(sort $(shell find $(LIBC_TOP_HALF_SOURCES) -name \*.[cs]))
+#LIBC_TOP_HALF_ALL_SOURCES = \
+#    $(LIBC_TOP_HALF_MUSL_SOURCES) \
+#    $(sort $(shell find $(LIBC_TOP_HALF_SOURCES) -name \*.[cs]))
 
 # Add any extra flags
 CFLAGS = $(EXTRA_CFLAGS)
@@ -461,6 +461,7 @@ LIBC_OBJS += $(OBJDIR)/wasip2_component_type.o
 endif
 ifeq ($(MALLOC_IMPL),dlmalloc)
 LIBC_OBJS += $(DLMALLOC_OBJS)
+LIBMALLOC_OBJS += $(DLMALLOC_OBJS)
 else ifeq ($(MALLOC_IMPL),emmalloc)
 LIBC_OBJS += $(EMMALLOC_OBJS)
 else ifeq ($(MALLOC_IMPL),none)
@@ -580,6 +581,7 @@ endif
 default: finish
 
 LIBC_SO_OBJS = $(patsubst %.o,%.pic.o,$(filter-out $(MUSL_PRINTSCAN_OBJS),$(LIBC_OBJS)))
+LIBMALLOC_SO_OBJS = $(patsubst %.o,%.pic.o,$(LIBMALLOC_OBJS))
 MUSL_PRINTSCAN_LONG_DOUBLE_SO_OBJS = $(patsubst %.o,%.pic.o,$(MUSL_PRINTSCAN_LONG_DOUBLE_OBJS))
 LIBWASI_EMULATED_MMAN_SO_OBJS = $(patsubst %.o,%.pic.o,$(LIBWASI_EMULATED_MMAN_OBJS))
 LIBWASI_EMULATED_PROCESS_CLOCKS_SO_OBJS = $(patsubst %.o,%.pic.o,$(LIBWASI_EMULATED_PROCESS_CLOCKS_OBJS))
@@ -625,12 +627,14 @@ $(SYSROOT_LIB)/libc.so: $(OBJDIR)/libc.so.a $(BUILTINS_LIB)
 	-o $@ -Wl,--whole-archive $< -Wl,--no-whole-archive $(BUILTINS_LIB) \
 	-Wl,--allow-undefined-file=linker-provided-symbols.txt
 
-$(SYSROOT_LIB)/%.so: $(OBJDIR)/%.so.a $(SYSROOT_LIB)/libc.so
-	$(CC) $(CFLAGS) -shared --sysroot=$(SYSROOT) \
+$(SYSROOT_LIB)/%.so: $(OBJDIR)/%.so.a
+	$(CC) $(CFLAGS) -shared \
 	-o $@ -Wl,--whole-archive $< -Wl,--no-whole-archive \
 	-Wl,--allow-undefined-file=linker-provided-symbols.txt
 
 $(OBJDIR)/libc.so.a: $(LIBC_SO_OBJS) $(MUSL_PRINTSCAN_LONG_DOUBLE_SO_OBJS)
+
+$(OBJDIR)/libmalloc.so.a: $(LIBMALLOC_SO_OBJS)
 
 $(OBJDIR)/libwasi-emulated-mman.so.a: $(LIBWASI_EMULATED_MMAN_SO_OBJS)
 
@@ -645,6 +649,8 @@ $(OBJDIR)/libdl.so.a: $(LIBDL_SO_OBJS)
 $(OBJDIR)/libsetjmp.so.a: $(LIBSETJMP_SO_OBJS)
 
 $(SYSROOT_LIB)/libc.a: $(LIBC_OBJS)
+
+$(SYSROOT_LIB)/libmalloc.a: $(LIBMALLOC_OBJS)
 
 $(SYSROOT_LIB)/libc-printscan-long-double.a: $(MUSL_PRINTSCAN_LONG_DOUBLE_OBJS)
 
@@ -762,31 +768,31 @@ $(EMMALLOC_OBJS): CFLAGS += \
     -fno-strict-aliasing
 
 include_dirs:
-	#
-	# Install the include files.
-	#
-	mkdir -p "$(SYSROOT_INC)"
-	cp -r "$(LIBC_BOTTOM_HALF_HEADERS_PUBLIC)"/* "$(SYSROOT_INC)"
-
-	# Generate musl's bits/alltypes.h header.
-	mkdir -p "$(SYSROOT_INC)/bits"
-	sed -f $(LIBC_TOP_HALF_MUSL_DIR)/tools/mkalltypes.sed \
-	    $(LIBC_TOP_HALF_MUSL_DIR)/arch/wasm32/bits/alltypes.h.in \
-	    $(LIBC_TOP_HALF_MUSL_DIR)/include/alltypes.h.in \
-	    > "$(SYSROOT_INC)/bits/alltypes.h"
-
-	# Copy in the bulk of musl's public header files.
-	cp -r "$(LIBC_TOP_HALF_MUSL_INC)"/* "$(SYSROOT_INC)"
-	# Copy in the musl's "bits" header files.
-	cp -r "$(LIBC_TOP_HALF_MUSL_DIR)"/arch/generic/bits/* "$(SYSROOT_INC)/bits"
-	cp -r "$(LIBC_TOP_HALF_MUSL_DIR)"/arch/wasm32/bits/* "$(SYSROOT_INC)/bits"
-
-	# Remove selected header files.
-	$(RM) $(patsubst %,$(SYSROOT_INC)/%,$(MUSL_OMIT_HEADERS))
-ifeq ($(WASI_SNAPSHOT), p2)
-	printf '#ifndef __wasilibc_use_wasip2\n#define __wasilibc_use_wasip2\n#endif\n' \
-		> "$(SYSROOT_INC)/__wasi_snapshot.h"
-endif
+#	#
+#	# Install the include files.
+#	#
+#	mkdir -p "$(SYSROOT_INC)"
+#	cp -r "$(LIBC_BOTTOM_HALF_HEADERS_PUBLIC)"/* "$(SYSROOT_INC)"
+#
+#	# Generate musl's bits/alltypes.h header.
+#	mkdir -p "$(SYSROOT_INC)/bits"
+#	sed -f $(LIBC_TOP_HALF_MUSL_DIR)/tools/mkalltypes.sed \
+#	    $(LIBC_TOP_HALF_MUSL_DIR)/arch/wasm32/bits/alltypes.h.in \
+#	    $(LIBC_TOP_HALF_MUSL_DIR)/include/alltypes.h.in \
+#	    > "$(SYSROOT_INC)/bits/alltypes.h"
+#
+#	# Copy in the bulk of musl's public header files.
+#	cp -r "$(LIBC_TOP_HALF_MUSL_INC)"/* "$(SYSROOT_INC)"
+#	# Copy in the musl's "bits" header files.
+#	cp -r "$(LIBC_TOP_HALF_MUSL_DIR)"/arch/generic/bits/* "$(SYSROOT_INC)/bits"
+#	cp -r "$(LIBC_TOP_HALF_MUSL_DIR)"/arch/wasm32/bits/* "$(SYSROOT_INC)/bits"
+#
+#	# Remove selected header files.
+#	$(RM) $(patsubst %,$(SYSROOT_INC)/%,$(MUSL_OMIT_HEADERS))
+#ifeq ($(WASI_SNAPSHOT), p2)
+#	printf '#ifndef __wasilibc_use_wasip2\n#define __wasilibc_use_wasip2\n#endif\n' \
+#		> "$(SYSROOT_INC)/__wasi_snapshot.h"
+#endif
 
 startup_files: include_dirs $(LIBC_BOTTOM_HALF_CRT_OBJS)
 	#
@@ -798,35 +804,39 @@ startup_files: include_dirs $(LIBC_BOTTOM_HALF_CRT_OBJS)
 # TODO: As of this writing, wasi_thread_start.s uses non-position-independent
 # code, and I'm not sure how to make it position-independent.  Once we've done
 # that, we can enable libc.so for the wasi-threads build.
-ifneq ($(THREAD_MODEL), posix)
 LIBC_SO = \
-	$(SYSROOT_LIB)/libc.so \
-	$(SYSROOT_LIB)/libwasi-emulated-mman.so \
-	$(SYSROOT_LIB)/libwasi-emulated-process-clocks.so \
-	$(SYSROOT_LIB)/libwasi-emulated-getpid.so \
-	$(SYSROOT_LIB)/libwasi-emulated-signal.so \
-	$(SYSROOT_LIB)/libdl.so
-ifeq ($(BUILD_LIBSETJMP),yes)
-LIBC_SO += \
-	$(SYSROOT_LIB)/libsetjmp.so
-endif
-endif
+	$(SYSROOT_LIB)/libmalloc.so
+#ifneq ($(THREAD_MODEL), posix)
+#LIBC_SO = \
+#	$(SYSROOT_LIB)/libc.so \
+#	$(SYSROOT_LIB)/libwasi-emulated-mman.so \
+#	$(SYSROOT_LIB)/libwasi-emulated-process-clocks.so \
+#	$(SYSROOT_LIB)/libwasi-emulated-getpid.so \
+#	$(SYSROOT_LIB)/libwasi-emulated-signal.so \
+#	$(SYSROOT_LIB)/libdl.so
+#ifeq ($(BUILD_LIBSETJMP),yes)
+#LIBC_SO += \
+#	$(SYSROOT_LIB)/libsetjmp.so
+#endif
+#endif
 
 libc_so: include_dirs $(LIBC_SO)
 
 STATIC_LIBS = \
-    $(SYSROOT_LIB)/libc.a \
-    $(SYSROOT_LIB)/libc-printscan-long-double.a \
-    $(SYSROOT_LIB)/libc-printscan-no-floating-point.a \
-    $(SYSROOT_LIB)/libwasi-emulated-mman.a \
-    $(SYSROOT_LIB)/libwasi-emulated-process-clocks.a \
-    $(SYSROOT_LIB)/libwasi-emulated-getpid.a \
-    $(SYSROOT_LIB)/libwasi-emulated-signal.a \
-    $(SYSROOT_LIB)/libdl.a
-ifeq ($(BUILD_LIBSETJMP),yes)
-STATIC_LIBS += \
-	$(SYSROOT_LIB)/libsetjmp.a
-endif
+    $(SYSROOT_LIB)/libmalloc.a
+#STATIC_LIBS = \
+#    $(SYSROOT_LIB)/libc.a \
+#    $(SYSROOT_LIB)/libc-printscan-long-double.a \
+#    $(SYSROOT_LIB)/libc-printscan-no-floating-point.a \
+#    $(SYSROOT_LIB)/libwasi-emulated-mman.a \
+#    $(SYSROOT_LIB)/libwasi-emulated-process-clocks.a \
+#    $(SYSROOT_LIB)/libwasi-emulated-getpid.a \
+#    $(SYSROOT_LIB)/libwasi-emulated-signal.a \
+#    $(SYSROOT_LIB)/libdl.a
+#ifeq ($(BUILD_LIBSETJMP),yes)
+#STATIC_LIBS += \
+#	$(SYSROOT_LIB)/libsetjmp.a
+#endif
 
 libc: include_dirs $(STATIC_LIBS)
 
